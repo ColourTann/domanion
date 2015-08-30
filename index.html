@@ -1,0 +1,90 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <script src='map.js'></script>
+    <script src='card.js'></script>
+    <script src='player.js'></script>
+    <script src='tableau.js'></script>
+    <script src='button.js'></script>
+    <script src='infopanel.js'></script>
+    <meta charset="UTF-8" />
+    <title>gamm</title>
+    <script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+// var sock = new WebSocket("ws://localhost:7981/oliver");
+// sock.onopen= function(e){
+//     sock.send("wheoo!!OIUJOIJ");
+// };
+// sock.onmessage= function(m){
+//     console.log(m.data)
+// }
+
+
+
+var game = new Phaser.Game(1100, 650, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+var c_light = 0xdeeed6;
+var c_green = 0x346524;
+var c_copper = 0x854c30;
+var c_silver = 0x8595a1;
+var c_gold = 0xd27d2c;
+var c_yellow = 0xdad45e;
+var c_blueDark = 0x30346d;
+var c_dark = 0x140c1c;
+
+var card;
+
+function preload() {
+    game.load.bitmapFont('silkscreen', 'assets/silkscreen_0.png', 'assets/silkscreen.fnt');
+    game.load.image('yv', 'assets/yv.png');
+    game.load.image('cardBase', 'assets/cardbase.png');
+    game.load.image('cardOutline', 'assets/cardoutline.png');
+    game.load.image('pixel', 'assets/pixel.png');
+    game.load.image('cardpic', 'assets/image.png');
+    game.load.image('button', 'assets/button.png');
+    game.load.image('cost', 'assets/cost.png');
+    game.load.image('bigbutton', 'assets/bigbutton.png');
+}
+
+
+
+function create() {
+    game.stage.backgroundColor = '#444444';
+    setupCards();
+
+    new Tableau();
+
+    new Player();
+
+    // console.log(InfoPanelStatics);
+
+    
+
+}
+
+function update() {
+    // card.x+=1;
+   // for(i=0;i<list.length;i++){
+   //  var player = list[i];
+
+   //   player.update();
+    
+   // }
+}
+
+
+
+
+</script>
+
+</body>
+</html>
