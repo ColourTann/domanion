@@ -16,6 +16,7 @@ function Stack(cardArgs, number, x, y){
 
 	// var me =this;
 	click=function(){
+		if(gameState!=GameStates.playing_cards)return;
 		this.buy();
 	}
 

@@ -8,10 +8,9 @@
     <script src='infopanel.js'></script>
     <script src='stack.js'></script>
     <script src='prompt.js'></script>
-    <script src='debug.js'></script>
     <script src='log.js'></script>
     <meta charset="UTF-8" />
-    <title>gamm</title>
+    <title>domanion</title>
     <script type="text/javascript" src="js/phaser.min.js"></script>
     <style type="text/css">
         body {
@@ -21,22 +20,36 @@
 </head>
 <body>
 
+
 <script type="text/javascript">
 
-var sock = new WebSocket("ws://localhost:7981/dominion");
+
+
+
+var sock = new WebSocket("ws://localhost:7981/dominion"); //localhost:7981
 sock.onopen= function(e){
-   
+   document.getElementById("formdiv").style.display="block";
 };
 sock.onmessage= function(m){
     console.log("from server: "+m.data);
     var string = m.data;
     var data = string.substring(1,m.data.length);
-    if(m.data.charAt(0)=="m")log.addLine(data, true);
+    if(m.data.charAt(0)=="s")startGame(); //start game//
+    if(m.data.charAt(0)=="e"){setState(GameStates.playing_cards);} //opponent ended turn//
+    if(m.data.charAt(0)=="m")log.addLine(data, true); //message to log//
+    
+}
+
+var message ="";
+var separator=">";
+function sendMessage(string){
+    if(string!="")message+=separator;
+    message+=string;
 }
 
 
 
-var game = new Phaser.Game(1100, 650, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+var game = new Phaser.Game(1100, 650, Phaser.AUTO, 'gamm', { preload: preload, create: create, update: update });
 
 var c_light = 0xdeeed6;
 var c_green = 0x346524;
@@ -48,7 +61,12 @@ var c_blueDark = 0x30346d;
 var c_dark = 0x140c1c;
 var c_greyDark= 0x4e4a4e;
 
-
+function joingame(){
+    document.getElementById("formdiv").style.display="none";
+    username=document.getElementById("username").value;
+    sendMessage("h"+document.getElementById("gamename").value);
+    return false;
+}
 
 
 function preload() {
@@ -66,39 +84,49 @@ function preload() {
     game.load.image('invisiblecard', 'assets/invisiblecard.png');
 }
 
+var GameStates={
+    playing_cards:0, trashCardFromHand:1, gainCardCosting:2, gainCardMax:3, discard:4,
+    trashCopper:5, trashTreasure:6, gainTreasure:7, enemyturn:8
+};
+
 var username= "tann";
 var log;
 
 var player;
-var gameState;
+var gameState=GameStates.enemyturn;
 var stateAction;
 var stateAmount;
 var stateArg;
 var stateSpecial;
 var postActions;
 var playedCard;
-var GameStates={
-    playing_cards:0, trashCardFromHand:1, gainCardCosting:2, gainCardMax:3, discard:4,
-    trashCopper:5, trashTreasure:6, gainTreasure:7
-};
 
 
-var debug;
+
+
+
+
+
+
 
 function create() {
     game.stage.backgroundColor = c_greyDark;
+
+}
+
+function startGame(){
     infoPanel=new InfoPanel();
     setupCards();
-
     new Tableau();
     player = new Player();
-    debug=new Debug();
-    setState(GameStates.playing_cards);
     log = new Log();
 }
 
 function update() {
-
+    if(message!=""){
+        sock.send(message);
+        message="";
+    }
 }
 
 function setState(state, arg, optional, after){
@@ -106,11 +134,14 @@ function setState(state, arg, optional, after){
     stateArg=arg;
     postActions=after;
     stateSpecial=[];
-   debug.showText(stringEnum(state,GameStates)+"");
    console.log("setting state: "+stringEnum(state, GameStates));
     switch(gameState){
         case GameStates.playing_cards:
             removePrompt();
+            player.showButtons(true);
+        break;
+        case GameStates.enemyturn:
+            player.showButtons(false);
         break;
         case GameStates.trashCardFromHand:
             addPrompt("Trash "+arg+" card"+(arg==1?"":"s")+" from your hand", optional);
@@ -144,7 +175,6 @@ function stateSuccess(all){
     }
     console.log("success");
     if(postActions){
-        console.log("running post action"+":"+postActions[0].action);
         postActions[0].run();     
     }
     else{
@@ -156,5 +186,22 @@ function stateSuccess(all){
 
 </script>
 
+<div style = "position: relative">
+
+<div id = "gamm" style = "height: 650px; width: 1100px; position: absolute; left:0; top:0">
+
+</div>
+<div id = "formdiv" style = "display:none; height: 650px; width: 1100px; position: absolute; left:300px; top:200px">
+<form onsubmit="return joingame()">
+  username:<br>
+  <input type="text" id="username" value="tann">
+  <br>
+  game name:<br>
+  <input type="text" id="gamename" value="game">
+  <br><br>
+  <input type="submit" value="Submit">
+</form>
+</div>
+</div>
 </body>
 </html>

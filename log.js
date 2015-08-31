@@ -11,7 +11,7 @@ function Log(){
 	this.group.y=groupY;
 	this.addLine=function(text, fromServer){
 		 //text for the button//
-		if(!fromServer)sock.send("m"+text);
+		if(!fromServer)sendMessage("m"+text);
 		if(prevString==text){
 			mult++;
 			prevText.text=prevString+" x"+mult;

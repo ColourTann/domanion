@@ -4,6 +4,7 @@ var discard=[];
 var played=[];
 
 
+
 function Player(){
 	
 	for(var i=0;i<7;i++){
@@ -104,6 +105,7 @@ function Player(){
 	this.displayCards();
 
 	this.playAllCoins= function(){
+		if(gameState!=GameStates.playing_cards)return;
 		for(var i=hand.length-1;i>=0;i--){
 			var card = hand[i];
 			if(card.cardType==CardTypes.money){
@@ -133,23 +135,32 @@ function Player(){
 		player.drawHand();
 		infoPanel.reset();
 		player.updatePanel();
+		setState(GameStates.enemyturn);
+		sendMessage("e");
 	}
 
 	
 	var buttX=900;
 	var buttY=300;
 	var buttGap=40;
-	var playCoinsButt=new Button("play all coins");
+	var playCoinsButt;
+	var endButt;
+	playCoinsButt=new Button("play all coins");
 	playCoinsButt.addClickFunction(this.playAllCoins);
 	playCoinsButt.group.x=buttX;
 	playCoinsButt.group.y=buttY;
 
-	var endButt=new Button("endTurn");
+	endButt=new Button("endTurn");
 	endButt.addClickFunction(this.endTurn);
 	endButt.group.x=buttX;
 	endButt.group.y=buttY+buttGap;
 
 	this.updatePanel();
+	this.showButtons=function(show){
+		endButt.group.visible=show;
+		playCoinsButt.group.visible=show;
+	}
+	this.showButtons(false);
 }
 
 

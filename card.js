@@ -34,7 +34,7 @@ function Action(action, arg, resultActions, card){
 	this.resultActions=resultActions;
 
 	this.run = function(){
-			console.log("playing action: "+stringEnum(action, actionStatics)+":"+arg);
+			
 		switch (action){
 			case actionStatics.money:
 				infoPanel.addData(InfoPanelStatics.coins, arg);
@@ -49,8 +49,6 @@ function Action(action, arg, resultActions, card){
 			case actionStatics.buys:
 				infoPanel.addData(InfoPanelStatics.buys, arg);
 			break;
-
-
 			case actionStatics.trash:
 				setState(GameStates.trashCardFromHand, arg, arg!=1, resultActions);
 			break;
@@ -89,7 +87,7 @@ function Action(action, arg, resultActions, card){
 				setState(GameStates.playing_cards);
 			break;
 			case actionStatics.discard:
-				setState(GameStates.discard, 3, false);
+				setState(GameStates.discard, arg, false);
 			break;
 
 			
@@ -123,7 +121,7 @@ function Card(cardType, title, cost, texts, actions){
     }
 
     function cardClick(){
-    	console.log(stringEnum(gameState, GameStates)+":"+stringEnum(this.cardType, CardTypes));
+    	
 
     	if(gameState!=GameStates.playing_cards){
 
@@ -367,7 +365,7 @@ function setupCards(){
 		[new Action(actionStatics.draw, 1), new Action(actionStatics.action, 1),
 		new Action(actionStatics.money, 1),	new Action(actionStatics.discard, 1)]);  
 
-	kingdomCards[3]= new CardArgs(CardTypes.action, "Great Hall", 3, 
+	kingdomCards[3]= new CardArgs(CardTypes.action, "great Hall", 3, 
 		["+1 action", "+1 card", "worth 1 point"], 
 		[new Action(actionStatics.action, 1), new Action(actionStatics.draw, 1)]);  
 
@@ -387,7 +385,7 @@ function setupCards(){
 		["1 point per", "10 cards in deck"], 
 		[new Action(actionStatics.onePointPerTen)]);
 
-	kingdomCards[8]= new CardArgs(CardTypes.action, "blacksmith", 2, 
+	kingdomCards[8]= new CardArgs(CardTypes.action, "pub", 2, 
 		["+2 cards", "+1 buy"], 
 		[new Action(actionStatics.draw, 2), new Action(actionStatics.buy, 1)]);
 
@@ -405,7 +403,7 @@ function setupCards(){
 		["+3 cards"], 
 		[new Action(actionStatics.draw, 3)]);  
 
-	kingdomCards[12]= new CardArgs(CardTypes.action, "Bazaar", 5, 
+	kingdomCards[12]= new CardArgs(CardTypes.action, "bazaar", 5, 
 		["+1 card", "+2 actions", "+1 coin"], 
 		[new Action(actionStatics.action, 2), new Action(actionStatics.draw, 1), 
 		new Action(actionStatics.money, 1)]);  
