@@ -3,12 +3,18 @@ var cardStatics={
 	costX:10,
 	textStartY:68,
 	yGap:14,
-	cardWidth:116
+	cardWidth:116,
+	cardHeight:118
 };
 
 var CardTypes={vp:0, action:1, money:2};
 
-var actionStatics={	money:0, action:1, draw:2, buy:3, trash:4, cycle:5, immunity:6, gainCardMax:7, trashSelf:8, onePointPerTen:9, otherDiscard:10 };
+var actionStatics={	money:0, action:1, draw:2, buy:3, trash:4, cycle:5, immunity:6, gainCardMax:7, 
+	trashSelf:8, onePointPerTen:9, otherDiscard:10, trashCopper:11, doublePlay:12, opponentseDraw:13,
+	upgradeTreasure:14, curse:15, drawTreasures:16, upgrade:17, drawDiscarded:18, gainBetterTreasure:19
+};
+
+var CardStates={pool:0, deck:1, hand:2, discard:3, played:4};
 
 function stringEnum(val,eenum){
 	for (var k in eenum) if (eenum[k] == val) return k;
@@ -20,17 +26,71 @@ function shuffleArray(o){
     return o;
 }
 
-function Action(action, arg, resultActions){
+function Action(action, arg, resultActions, card){
 	this.action=action;
 	this.arg=arg;
 	this.resultActions=resultActions;
+
 	this.run = function(){
+			console.log("playing action: "+stringEnum(action, actionStatics));
 		switch (action){
 			case actionStatics.money:
-				infoPanel.addData(InfoPanelStatics.coins, 1);
+				infoPanel.addData(InfoPanelStatics.coins, arg);
+				setState(GameStates.playing_cards);
 			break;
+			case actionStatics.action:
+				infoPanel.addData(InfoPanelStatics.actions, arg);
+			break;
+			case actionStatics.draw:
+				player.drawCards(arg);
+			break;
+			case actionStatics.buys:
+				infoPanel.addData(InfoPanelStatics.buys, arg);
+			break;
+
+
+			case actionStatics.trash:
+				setState(GameStates.trashCardFromHand, arg, arg!=1, resultActions);
+			break;
+			case actionStatics.upgrade:
+				setState(GameStates.gainCardMax, stateSpecial.cost+2, false, resultActions);
+			break;
+			case actionStatics.cycle:
+				setState(GameStates.discard, 0, true, [new Action(actionStatics.drawDiscarded)]);
+			break;
+			case actionStatics.drawDiscarded:
+				player.drawCards(stateSpecial);
+				setState(GameStates.playing_cards);
+			break;
+			case actionStatics.gainCardMax:
+				setState(GameStates.gainCardMax, arg, false, resultActions);
+			break;
+			case actionStatics.trashCopper:
+				setState(GameStates.trashCopper, 1, false, resultActions);
+			break;
+			case actionStatics.trashSelf:
+				playedCard.trash();
+			break;
+			case actionStatics.upgradeTreasure:
+				setState(GameStates.trashTreasure, 1, false, [new Action(actionStatics.gainBetterTreasure)]);
+			break;
+			case actionStatics.gainBetterTreasure:
+				var card;
+				if(stateSpecial.title=="copper"){
+					var card = moneyStacks[1].remove();
+				}
+				if(stateSpecial.title=="silver"||stateSpecial.title=="gold"){
+					var card = moneyStacks[2].remove();
+				}
+				if(card) player.addCardToHand(card);
+				card.setState(CardStates.hand);
+				setState(GameStates.playing_cards);
+			break;
+			
+			
+			
+
 		}
-		console.log(stringEnum(action, actionStatics)+":"+arg);
 	}
 }
 
@@ -39,13 +99,145 @@ function CardArgs(cardType, title, cost, texts, actions){
 }
 
 function Card(cardType, title, cost, texts, actions){
+	
+
+	this.trash =function(){
+		this.removeFromHand();
+		this.hide();
+		player.displayCards();
+    }
+
+    function cardClick(){
+    	console.log(stringEnum(gameState, GameStates)+":"+stringEnum(this.cardType, CardTypes));
+
+    	if(gameState!=GameStates.playing_cards){
+
+	    	if(gameState==GameStates.trashCardFromHand||
+	    		gameState==GameStates.trashCopper&&this.title=="copper"||
+	    		gameState==GameStates.trashTreasure&&this.cardType==CardTypes.money){
+	    		this.trash();
+	    		stateSpecial=this;
+	    		stateSuccess();
+	    		return;
+	    	}
+
+	    	if(gameState==GameStates.discard){
+	    		this.discard();
+	    		stateSpecial++;
+	    		return;
+	    	}
+	    	return;
+		}
+
+    	if(this.state==CardStates.hand)this.play();
+    }
+    
+	this.addText= function(line, text, group){
+		text = game.add.bitmapText(0, cardStatics.textStartY+line*cardStatics.yGap, 'silkscreen', text, 16);
+		text.x=Math.round(cardStatics.cardWidth/2-text.textWidth/2);
+     	text.tint=col;
+     	group.add(text);
+	};
+	
+
+	this.getSortByTypeValue=function(){
+		var result=0;
+		 switch(cardType){
+		 	case CardTypes.vp:
+		    	result+=0;
+			break;
+			case CardTypes.money:
+				result+=10000;
+			break;
+			case CardTypes.action:
+				result+=20000;
+			break;
+		 }
+		result+=cost*1000;
+		result+=title.charCodeAt(0)*10;
+		result+=title.charCodeAt(1)*.1;
+		result+=title.charCodeAt(2)*.001;
+		return result;
+	}
+
+	this.setState=function(state){
+		switch(state){
+			case CardStates.hand:
+
+			break;
+			case CardStates.played:
+				this.hide();
+			break;
+			case CardStates.discard:
+				this.hide();
+			break;
+			case CardStates.hand:
+				this.group.visible=true;
+
+
+			break;
+		}
+		this.state=state;
+	}
+
+	this.removeFromHand=function(){
+		var index = hand.indexOf(this);
+		if (index > -1) {
+		    hand.splice(index, 1);
+		}
+	}
+
+	this.discard=function(){
+		this.removeFromHand();
+		discard.push(this);
+		this.hide();
+		player.displayCards();
+		infoPanel.redoText();
+	}
+
+	this.play=function(){
+		if(this.cardType==CardTypes.vp)return;
+		if(this.cardType==CardTypes.action){
+			if(infoPanel.actions<=0)return;
+			infoPanel.addData(InfoPanelStatics.actions, -1);
+		}
+		playedCard=this;
+		this.removeFromHand();
+		played.push(this);
+    	this.setState(CardStates.played);
+    	for(var i =0; i<actions.length;i++){
+    		var action = this.actions[i];
+    		action.run();
+    	}
+	}
+
+	this.hide=function(){
+		this.group.visible=false;
+	}
+
+	this.setSide=function(side){
+		var frontVisible = side==0;
+		faceDownGroup.visible=frontVisible;
+		faceUpGroup.visible=!frontVisible;	
+	}
+
+	this.state=CardStates.pool;
 	this.cardType=cardType;
 	this.title=title;
 	this.cost=cost;
 	this.actions=actions;
 	var col=c_light;
 	//group to add everything to//
-	this.group = game.add.group(); 
+	this.group = game.add.group();
+	this.faceUpGroup=game.add.group();
+	this.faceDownGroup=game.add.group();
+	this.group.add(this.faceUpGroup);
+	this.group.add(this.faceDownGroup);
+
+	//setup faceDownGroup//
+	this.backSprite=game.add.sprite(0,0,"cardback");
+	this.faceDownGroup.add(this.backSprite);
+	this.faceDownGroup.visible=false;
 
 	//setup base sprite//
     this.cardBase = game.add.sprite(0,0,'cardBase');
@@ -65,82 +257,42 @@ function Card(cardType, title, cost, texts, actions){
 		this.cardBase.tint=c_blueDark;
 		break;
     }
-    this.group.add(this.cardBase);
+    this.faceUpGroup.add(this.cardBase);
 
     //add clickListener to base sprite//
     this.cardBase.inputEnabled = true;
     this.cardBase.events.onInputDown.add(cardClick, this);
-    function cardClick(){
-    	this.play();
-    }
+
+   
 
     //add outline//
  	this.cardOutline = game.add.sprite(0,0,'cardOutline');
- 	this.group.add(this.cardOutline);
+ 	this.faceUpGroup.add(this.cardOutline);
 
  	//add image//
  	this.cardpic = game.add.sprite(0,0,'cardpic');
- 	this.group.add(this.cardpic);
+ 	this.faceUpGroup.add(this.cardpic);
 
     //add card title//
     text = game.add.bitmapText(0, cardStatics.titleY, 'silkscreen', title, 16); 
 	text.x=Math.round(cardStatics.cardWidth/2-text.textWidth/2);
  	text.tint=col;
- 	this.group.add(text);
+ 	this.faceUpGroup.add(text);
 
     //add card cost circle//
     this.costOutline = game.add.sprite(0,0,'cost');
-   	this.group.add(this.costOutline);
+   	this.faceUpGroup.add(this.costOutline);
 
    	//add card cost text//
 	text = game.add.bitmapText(0, cardStatics.titleY, 'silkscreen', ""+cost, 16); 
 	text.x=cardStatics.costX;
  	text.tint=c_dark;
- 	this.group.add(text);
+ 	this.faceUpGroup.add(text);
 
-    //add card text//
-	this.addText= function(line, text, group){
-		text = game.add.bitmapText(0, cardStatics.textStartY+line*cardStatics.yGap, 'silkscreen', text, 16);
-		text.x=Math.round(cardStatics.cardWidth/2-text.textWidth/2);
-     	text.tint=col;
-     	group.add(text);
-	};
-	for(var i =0;i<texts.length;i++){
-		this.addText(i, texts[i], this.group);
-	}	
-
-	this.getSortByTypeValue=function(){
-		var result=0;
-		 switch(cardType){
-		 	case CardTypes.vp:
-		    	result+=0;
-			break;
-			case CardTypes.money:
-				result+=10000;
-			break;
-			case CardTypes.action:
-				result+=20000;
-			break;
-		 }
-		result+=cost*1000;
-		result+=title.charCodeAt(0)*10;
-		result+=title.charCodeAt(1)*1;
-		result+=title.charCodeAt(2)*1;
-		return result;
-	}
-
-	this.play=function(){
-		if(this.cardType==CardTypes.vp)return;
-    	for(var i =0; i<actions.length;i++){
-    		var action = this.actions[i];
-    		action.run();
-    	}
-    	this.hide();
-	}
-
-	this.hide=function(){
-		this.group.visible=false;
-	}
+ 	//add card text//
+ 	for(var i =0;i<texts.length;i++){
+		this.addText(i, texts[i], this.faceUpGroup);
+	}		
 }
 
 function createCard(cardArgs) {
@@ -192,7 +344,7 @@ function setupCards(){
 		["trash up", "to 4 cards"], 
 		[new Action(actionStatics.trash, 4)]);  
 
-	kingdomCards[2]= new CardArgs(CardTypes.action, "Moat", 2, 
+	kingdomCards[2]= new CardArgs(CardTypes.action, "moat", 2, 
 		["Draw 2 cards,", "attack immunity", "if in your hand"], 
 		[new Action(actionStatics.draw, 2), new Action(actionStatics.immunity)]);  
 
@@ -202,10 +354,10 @@ function setupCards(){
 
 	kingdomCards[4]= new CardArgs(CardTypes.action, "woodcutter", 3, 
 		["+2 coins,", "+1 buy"], 
-		[new Action(actionStatics.money, 2), new Action(actionStatics.buy, 1)]);  
+		[new Action(actionStatics.money, 2), new Action(actionStatics.buys, 1)]);  
 
 	kingdomCards[5]= new CardArgs(CardTypes.action, "workshop", 3, 
-		["gain any card", "up to 4 cost"], 
+		["gain any card", "up to cost 4"], 
 		[new Action(actionStatics.gainCardMax, 4)]);  
 
 	kingdomCards[6]= new CardArgs(CardTypes.action, "feast", 4, 
@@ -220,13 +372,52 @@ function setupCards(){
 		["+2 money,", "opponents discard", "down to 3 cards"], 
 		[new Action(actionStatics.money, 2), new Action(actionStatics.otherDiscard, 3)]);
 
-	kingdomCards[9]= new CardArgs(CardTypes.action, "smithy", 4, 
+	kingdomCards[9]= new CardArgs(CardTypes.action, "loanshark", 4, 
+		["trash a copper,", "to gain 3 coins"], 
+		[new Action(actionStatics.trashCopper, 1, [new Action(actionStatics.money, 3)] )]);	
+
+	kingdomCards[10]= new CardArgs(CardTypes.action, "remodel", 4, 
+		["trash a card to", "gain a card", "worth 2 more"], 
+		[new Action(actionStatics.trash, 1, [new Action(actionStatics.upgrade,2)] )]);	
+
+	kingdomCards[11]= new CardArgs(CardTypes.action, "smithy", 4, 
 		["+3 cards"], 
 		[new Action(actionStatics.draw, 3)]);  
 
-	kingdomCards[10]= new CardArgs(CardTypes.action, "festival", 5, 
+	kingdomCards[12]= new CardArgs(CardTypes.action, "throne", 4, 
+		["play another", "action card twice"], 
+		[new Action(actionStatics.doublePlay, 1)]);	
+
+	kingdomCards[13]= new CardArgs(CardTypes.action, "council", 5, 
+		["+4 cards", "+1 buy", "opponents draw 1"], 
+		[new Action(actionStatics.draw, 4), new Action(actionStatics.buy, 1), 
+		new Action(actionStatics.opponentseDraw, 1)]);	
+
+	kingdomCards[14]= new CardArgs(CardTypes.action, "festival", 5, 
 		["+2 actions,", "+1 buy,", "+2 coins"], 
-		[new Action(actionStatics.action, 2), new Action(actionStatics.buy, 1), new Action(actionStatics.money, 2)]);  
+		[new Action(actionStatics.action, 2), new Action(actionStatics.buys, 1), 
+		new Action(actionStatics.money, 2)]);  
+
+	kingdomCards[15]= new CardArgs(CardTypes.action, "laboratory", 5, 
+		["+1 action", "+2 cards"], 
+		[new Action(actionStatics.draw, 2), new Action(actionStatics.action, 1)]);	
+
+	kingdomCards[16]= new CardArgs(CardTypes.action, "laboratory", 5, 
+		["+1 action", "+1 card", "+1 buy, +1 coin"], 
+		[new Action(actionStatics.draw, 1), new Action(actionStatics.action, 1), 
+		new Action(actionStatics.buy, 1), new Action(actionStatics.money, 1)]);	
+
+	kingdomCards[17]= new CardArgs(CardTypes.action, "mine", 2, 
+		["upgrade a", "treasure card"], 
+		[new Action(actionStatics.upgradeTreasure, 1)]);	
+
+	kingdomCards[18]= new CardArgs(CardTypes.action, "witch", 5, 
+		["+2 cards", "each opponent", "gets a curse"], 
+		[new Action(actionStatics.draw, 2), new Action(actionStatics.curse, 1)]);	
+
+	kingdomCards[19]= new CardArgs(CardTypes.action, "adventurer", 6, 
+		["draw the next", "2 treasures", "from your deck"], 
+		[new Action(actionStatics.drawTreasures, 2)]);	
 }
 
 function placeNicely(cards, y){
@@ -241,7 +432,7 @@ function sortByCost(cards){
 }
 
 function compareCardCosts(a,b){
-	return a.cost-b.cost;
+	return a.args[2]-b.args[2];
 }
 
 function sortByType(cards){
@@ -249,6 +440,5 @@ function sortByType(cards){
 }
 
 function compareCardTypes(a, b){
-
 	return a.getSortByTypeValue()-b.getSortByTypeValue();
 }

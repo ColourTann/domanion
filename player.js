@@ -1,9 +1,11 @@
 var deck=[];
 var hand=[];
 var discard=[];
-var infoPanel;
+var played=[];
+
+
 function Player(){
-	infoPanel= new InfoPanel();
+	
 	for(var i=0;i<7;i++){
 		deck.push(createCard(moneyCards[0]));
 	}	
@@ -16,28 +18,50 @@ function Player(){
 		deck[i].group.visible=false;
 	}
 
-	drawHand = function(){
-		hand=[];
-		for(var i =0;i<5;i++){
-			if(deck.length==0) dominion();
-			hand.push(deck.splice(0,1)[0])
-		}
-	}
-
-	dominion = function (){
-		deck=discard;
+	this.dominion = function (){
+		deck=deck.concat(discard);
 		discard=[];
 		shuffleArray(deck);
 	}
 
-	displayCards = function(){
+	this.drawCards=function(amount){
+		for(var i =0;i<amount;i++){
+			if(deck.length==0){
+				this.dominion();
+			} 
+			var card = deck.splice(0,1)[0];
+			card.setState(CardStates.hand);
+			this.addCardToHand(card);
+		}	
+		
+	}
+
+	this.addCardToHand=function(card){
+		hand.push(card);
+		this.displayCards();
+		infoPanel.redoText();
+	}
+
+	this.drawHand = function(){
+		hand=[];
+		this.drawCards(5);
+	}
+
+	
+
+	var xGap=game.cache.getImage("cardBase").width+gap;
+	var yGap=-(game.cache.getImage("cardBase").height+gap);
+	this.displayCards = function(){
 		
 		sortByType(hand);
 
-		
-		var x=dividerX+gap;
-		var y=game.height-hand[0].cardBase.height-gap;
-		var prevCard;
+		var startX=dividerX+gap;
+		var startY=game.height+yGap;
+		var x=0;
+		var y=0;
+
+
+
 
 		var prevCard;
 		var prevIndex=hand.length-1;
@@ -52,6 +76,7 @@ function Player(){
 		prevCard=null;
 		for(var i=0;i<hand.length;i++){
 			var card = hand[i];
+			card.group.visible=true;
 			var dupe=false;
 			if(prevCard!=null&&prevCard.title==card.title){
 				dupe=true;
@@ -61,19 +86,24 @@ function Player(){
 				card.group.y=prevCard.group.y-4;
 			}
 			else{
-				card.group.y=y;
-				card.group.x=x;
-				x+=card.cardBase.width+gap;
+				card.group.y=startY+y*yGap;
+				card.group.x=startX+x*xGap;
+				x++;
+				if(x>=3){
+					x=0;
+					y++;
+				}
+				
 			}
 			card.group.visible=true;
 			
 			prevCard=card;
 		}
 	}
-	drawHand();
-	displayCards();
+	this.drawHand();
+	this.displayCards();
 
-	playAllCoins= function(){
+	this.playAllCoins= function(){
 		for(var i=hand.length-1;i>=0;i--){
 			var card = hand[i];
 			if(card.cardType==CardTypes.money){
@@ -82,24 +112,44 @@ function Player(){
 		}
 	}
 
-	endTurn= function(){
-		for(var i=0;i<hand.length;i++){
-			hand[i].hide();
-		}
-		discard=discard.concat(hand);
-		drawHand();
-		displayCards();
+	this.updatePanel=function(){
+		infoPanel.setData(InfoPanelStatics.deck, deck.length);
+		infoPanel.setData(InfoPanelStatics.discard, discard.length);
 	}
 
+	this.endTurn= function(){
+		if(gameState!=GameStates.playing_cards)return;
+		for(var i=0;i<hand.length;i++){
+			hand[i].setState(CardStates.discard);
+		}
+		for(var i=0;i<played.length;i++){
+			played[i].setState(CardStates.discard);
+		}
+		discard=discard.concat(hand);
+		discard=discard.concat(played);
+		played=[];
+		hand=[];
+		player.displayCards();
+		player.drawHand();
+		infoPanel.reset();
+		player.updatePanel();
+	}
+
+	
+	var buttX=900;
+	var buttY=300;
+	var buttGap=40;
 	var playCoinsButt=new Button("play all coins");
-	playCoinsButt.addClickFunction(playAllCoins);
-	playCoinsButt.group.x=850;
-	playCoinsButt.group.y=50;
+	playCoinsButt.addClickFunction(this.playAllCoins);
+	playCoinsButt.group.x=buttX;
+	playCoinsButt.group.y=buttY;
 
 	var endButt=new Button("endTurn");
-	endButt.addClickFunction(endTurn);
-	endButt.group.x=850;
-	endButt.group.y=150;
+	endButt.addClickFunction(this.endTurn);
+	endButt.group.x=buttX;
+	endButt.group.y=buttY+buttGap;
+
+	this.updatePanel();
 }
 
 
