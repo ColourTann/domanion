@@ -9,6 +9,7 @@
     <script src='stack.js'></script>
     <script src='prompt.js'></script>
     <script src='debug.js'></script>
+    <script src='log.js'></script>
     <meta charset="UTF-8" />
     <title>gamm</title>
     <script type="text/javascript" src="js/phaser.min.js"></script>
@@ -22,13 +23,16 @@
 
 <script type="text/javascript">
 
-// var sock = new WebSocket("ws://localhost:7981/oliver");
-// sock.onopen= function(e){
-//     sock.send("wheoo!!OIUJOIJ");
-// };
-// sock.onmessage= function(m){
-//     console.log(m.data)
-// }
+var sock = new WebSocket("ws://localhost:7981/dominion");
+sock.onopen= function(e){
+   
+};
+sock.onmessage= function(m){
+    console.log("from server: "+m.data);
+    var string = m.data;
+    var data = string.substring(1,m.data.length);
+    if(m.data.charAt(0)=="m")log.addLine(data, true);
+}
 
 
 
@@ -43,7 +47,9 @@ var c_yellow = 0xdad45e;
 var c_blueDark = 0x30346d;
 var c_dark = 0x140c1c;
 var c_greyDark= 0x4e4a4e;
-var card;
+
+
+
 
 function preload() {
     game.load.bitmapFont('silkscreen', 'assets/silkscreen_0.png', 'assets/silkscreen.fnt');
@@ -59,6 +65,9 @@ function preload() {
     game.load.image('longbutton', 'assets/longbutton.png');
     game.load.image('invisiblecard', 'assets/invisiblecard.png');
 }
+
+var username= "tann";
+var log;
 
 var player;
 var gameState;
@@ -85,6 +94,7 @@ function create() {
     player = new Player();
     debug=new Debug();
     setState(GameStates.playing_cards);
+    log = new Log();
 }
 
 function update() {
@@ -111,8 +121,9 @@ function setState(state, arg, optional, after){
         break;
         case GameStates.discard:
             stateSpecial=0;
-            addPrompt("discard cards", true);
-            this.stateAmount=999;
+            addPrompt("discard "+(arg==0?"":(arg==1?" ":"s "))+ "cards", arg==0);
+            this.stateAmount=(arg==0?999:arg);
+            console.log(this.stateAmount);
         break;
         case GameStates.trashCopper:
             this.stateAmount=1;
@@ -122,6 +133,7 @@ function setState(state, arg, optional, after){
             this.stateAmount=1;
             addPrompt("trash a treasure", false);
         break;
+
     }
 }
 

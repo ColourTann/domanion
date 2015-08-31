@@ -56,6 +56,7 @@ function Stack(cardArgs, number, x, y){
 			infoPanel.addData(InfoPanelStatics.coins, -card.cost);
 			infoPanel.addData(InfoPanelStatics.buys, -1);
 		}
+		log.addLine(username+(free?" gains ":" buys ")+card.title);
 		card.setState(CardStates.discard);
 		player.updatePanel();
 	}

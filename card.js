@@ -11,8 +11,10 @@ var CardTypes={vp:0, action:1, money:2};
 
 var actionStatics={	money:0, action:1, draw:2, buy:3, trash:4, cycle:5, immunity:6, gainCardMax:7, 
 	trashSelf:8, onePointPerTen:9, otherDiscard:10, trashCopper:11, doublePlay:12, opponentseDraw:13,
-	upgradeTreasure:14, curse:15, drawTreasures:16, upgrade:17, drawDiscarded:18, gainBetterTreasure:19
+	upgradeTreasure:14, curse:15, upgrade:17, drawDiscarded:18, gainBetterTreasure:19, discard:20
 };
+
+var CardRequirement={hasCopper:0, hasCard:1, hasTreasure:2};
 
 var CardStates={pool:0, deck:1, hand:2, discard:3, played:4};
 
@@ -32,7 +34,7 @@ function Action(action, arg, resultActions, card){
 	this.resultActions=resultActions;
 
 	this.run = function(){
-			console.log("playing action: "+stringEnum(action, actionStatics));
+			console.log("playing action: "+stringEnum(action, actionStatics)+":"+arg);
 		switch (action){
 			case actionStatics.money:
 				infoPanel.addData(InfoPanelStatics.coins, arg);
@@ -86,6 +88,10 @@ function Action(action, arg, resultActions, card){
 				card.setState(CardStates.hand);
 				setState(GameStates.playing_cards);
 			break;
+			case actionStatics.discard:
+				setState(GameStates.discard, 3, false);
+			break;
+
 			
 			
 			
@@ -103,8 +109,17 @@ function Card(cardType, title, cost, texts, actions){
 
 	this.trash =function(){
 		this.removeFromHand();
+		this.removeFromPlayed();
 		this.hide();
 		player.displayCards();
+		log.addLine(username+" trashes "+this.title);
+    }
+
+    this.removeFromPlayed=function(){
+    	var index = played.indexOf(this);
+		if (index > -1) {
+		    played.splice(index, 1);
+		}
     }
 
     function cardClick(){
@@ -124,6 +139,7 @@ function Card(cardType, title, cost, texts, actions){
 	    	if(gameState==GameStates.discard){
 	    		this.discard();
 	    		stateSpecial++;
+	    		stateSuccess();
 	    		return;
 	    	}
 	    	return;
@@ -188,6 +204,7 @@ function Card(cardType, title, cost, texts, actions){
 	}
 
 	this.discard=function(){
+		log.addLine(username+" discards "+this.title);
 		this.removeFromHand();
 		discard.push(this);
 		this.hide();
@@ -196,6 +213,7 @@ function Card(cardType, title, cost, texts, actions){
 	}
 
 	this.play=function(){
+		log.addLine(username+" plays "+this.title);
 		if(this.cardType==CardTypes.vp)return;
 		if(this.cardType==CardTypes.action){
 			if(infoPanel.actions<=0)return;
@@ -337,23 +355,24 @@ function setupCards(){
 	//kingdom cards constructor list//
 
 	kingdomCards[0]= new CardArgs(CardTypes.action, "cellar", 2, 
-		["+1 action,", "discard x cards,", "draw x cards"], 
+		["+1 action", "discard x cards", "draw x cards"], 
 		[new Action(actionStatics.action, 1), new Action(actionStatics.cycle, 0)]);  
 
 	kingdomCards[1]= new CardArgs(CardTypes.action, "chapel", 2, 
 		["trash up", "to 4 cards"], 
 		[new Action(actionStatics.trash, 4)]);  
 
-	kingdomCards[2]= new CardArgs(CardTypes.action, "moat", 2, 
-		["Draw 2 cards,", "attack immunity", "if in your hand"], 
-		[new Action(actionStatics.draw, 2), new Action(actionStatics.immunity)]);  
+	kingdomCards[2]= new CardArgs(CardTypes.action, "oracle", 3, 
+		["+1 card, +1 action", "+1 coin", "discard a card"], 
+		[new Action(actionStatics.draw, 1), new Action(actionStatics.action, 1),
+		new Action(actionStatics.money, 1),	new Action(actionStatics.discard, 1)]);  
 
-	kingdomCards[3]= new CardArgs(CardTypes.action, "village", 3, 
-		["+2 actions,", "+1 card"], 
-		[new Action(actionStatics.action, 2), new Action(actionStatics.draw, 1)]);  
+	kingdomCards[3]= new CardArgs(CardTypes.action, "Great Hall", 3, 
+		["+1 action", "+1 card", "worth 1 point"], 
+		[new Action(actionStatics.action, 1), new Action(actionStatics.draw, 1)]);  
 
 	kingdomCards[4]= new CardArgs(CardTypes.action, "woodcutter", 3, 
-		["+2 coins,", "+1 buy"], 
+		["+2 coins", "+1 buy"], 
 		[new Action(actionStatics.money, 2), new Action(actionStatics.buys, 1)]);  
 
 	kingdomCards[5]= new CardArgs(CardTypes.action, "workshop", 3, 
@@ -368,25 +387,28 @@ function setupCards(){
 		["1 point per", "10 cards in deck"], 
 		[new Action(actionStatics.onePointPerTen)]);
 
-	kingdomCards[8]= new CardArgs(CardTypes.action, "militia", 4, 
-		["+2 money,", "opponents discard", "down to 3 cards"], 
-		[new Action(actionStatics.money, 2), new Action(actionStatics.otherDiscard, 3)]);
+	kingdomCards[8]= new CardArgs(CardTypes.action, "blacksmith", 2, 
+		["+2 cards", "+1 buy"], 
+		[new Action(actionStatics.draw, 2), new Action(actionStatics.buy, 1)]);
 
 	kingdomCards[9]= new CardArgs(CardTypes.action, "loanshark", 4, 
-		["trash a copper,", "to gain 3 coins"], 
-		[new Action(actionStatics.trashCopper, 1, [new Action(actionStatics.money, 3)] )]);	
+		["trash a copper", "to gain 3 coins"], 
+		[new Action(actionStatics.trashCopper, 1, [new Action(actionStatics.money, 3)])],
+		CardRequirement.hasCopper);	
 
 	kingdomCards[10]= new CardArgs(CardTypes.action, "remodel", 4, 
 		["trash a card to", "gain a card", "worth 2 more"], 
-		[new Action(actionStatics.trash, 1, [new Action(actionStatics.upgrade,2)] )]);	
+		[new Action(actionStatics.trash, 1, [new Action(actionStatics.upgrade,2)] )],
+		CardRequirement.hasCard);	
 
 	kingdomCards[11]= new CardArgs(CardTypes.action, "smithy", 4, 
 		["+3 cards"], 
 		[new Action(actionStatics.draw, 3)]);  
 
-	kingdomCards[12]= new CardArgs(CardTypes.action, "throne", 4, 
-		["play another", "action card twice"], 
-		[new Action(actionStatics.doublePlay, 1)]);	
+	kingdomCards[12]= new CardArgs(CardTypes.action, "Bazaar", 5, 
+		["+1 card", "+2 actions", "+1 coin"], 
+		[new Action(actionStatics.action, 2), new Action(actionStatics.draw, 1), 
+		new Action(actionStatics.money, 1)]);  
 
 	kingdomCards[13]= new CardArgs(CardTypes.action, "council", 5, 
 		["+4 cards", "+1 buy", "opponents draw 1"], 
@@ -394,7 +416,7 @@ function setupCards(){
 		new Action(actionStatics.opponentseDraw, 1)]);	
 
 	kingdomCards[14]= new CardArgs(CardTypes.action, "festival", 5, 
-		["+2 actions,", "+1 buy,", "+2 coins"], 
+		["+2 actions", "+1 buy", "+2 coins"], 
 		[new Action(actionStatics.action, 2), new Action(actionStatics.buys, 1), 
 		new Action(actionStatics.money, 2)]);  
 
@@ -402,22 +424,38 @@ function setupCards(){
 		["+1 action", "+2 cards"], 
 		[new Action(actionStatics.draw, 2), new Action(actionStatics.action, 1)]);	
 
-	kingdomCards[16]= new CardArgs(CardTypes.action, "laboratory", 5, 
+	kingdomCards[16]= new CardArgs(CardTypes.action, "market", 5, 
 		["+1 action", "+1 card", "+1 buy, +1 coin"], 
 		[new Action(actionStatics.draw, 1), new Action(actionStatics.action, 1), 
 		new Action(actionStatics.buy, 1), new Action(actionStatics.money, 1)]);	
 
-	kingdomCards[17]= new CardArgs(CardTypes.action, "mine", 2, 
+	kingdomCards[17]= new CardArgs(CardTypes.action, "mine", 5, 
 		["upgrade a", "treasure card"], 
-		[new Action(actionStatics.upgradeTreasure, 1)]);	
+		[new Action(actionStatics.upgradeTreasure, 1)],
+		CardRequirement.hasTreasure);	
 
-	kingdomCards[18]= new CardArgs(CardTypes.action, "witch", 5, 
-		["+2 cards", "each opponent", "gets a curse"], 
-		[new Action(actionStatics.draw, 2), new Action(actionStatics.curse, 1)]);	
+	kingdomCards[18]= new CardArgs(CardTypes.action, "altar", 6, 
+		["trash a card", "gain a card", "up to cost 5"], 
+		[new Action(actionStatics.trash, 1, [new Action(actionStatics.gainCardMax, 5)])]);	
 
-	kingdomCards[19]= new CardArgs(CardTypes.action, "adventurer", 6, 
-		["draw the next", "2 treasures", "from your deck"], 
-		[new Action(actionStatics.drawTreasures, 2)]);	
+	kingdomCards[19]= new CardArgs(CardTypes.vp, "duke", 5, 
+		["1 point per", "duchy in your", "deck"], 
+		[]);	
+
+	kingdomCards[20]= new CardArgs(CardTypes.action, "warehouse", 3, 
+		["+3 cards", "+1 action", "discard 3 cards"], 
+		[new Action(actionStatics.draw, 3), new Action(actionStatics.action, 1), new Action(actionStatics.discard, 3)]);	
+
+
+	kingdomCards[21]= new CardArgs(CardTypes.action, "junk dealer", 5, 
+		["+1 action, +1 card", "+1 coin", "trash 1 card"], 
+		[new Action(actionStatics.draw, 1), new Action(actionStatics.action, 1), 
+		new Action(actionStatics.money, 1), new Action(actionStatics.trash, 1)]);	
+
+
+
+
+
 }
 
 function placeNicely(cards, y){
