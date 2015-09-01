@@ -11,7 +11,7 @@ function addPrompt(text, ok){
 
 }
 
-var promptX=748;
+var promptX=690;
 var promptY=250;
 function Prompt(text, ok){
 	//group to add everything to//

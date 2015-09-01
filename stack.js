@@ -1,6 +1,5 @@
 var depletedStacks=0;
-
-
+var ended=false;
 
 function Stack(cardArgs, number, x, y){
 	this.numCards=number;
@@ -60,13 +59,15 @@ function Stack(cardArgs, number, x, y){
 			if(!fromServer){
 				if((card.title=="province"&&this.cardStack.length==0)||
 					depletedStacks==3){
-					gameEnd();
+					ended=true;
 				}
 			}
 		}
 		
 		return card;
 	}
+
+
 
 	this.gain = function(free){
 		//do text//
@@ -79,6 +80,9 @@ function Stack(cardArgs, number, x, y){
 		log.addLine(username+(free?" gains ":" buys ")+card.title);
 		card.setState(CardStates.discard);
 		player.updatePanel();
+		if(ended){
+			gameEnd();
+		}
 	}
 
 	

@@ -55,7 +55,7 @@ function placeKingdomCards(cards){
 				y-=yGap;
 			}
 		}
-		kingdomStacks.push(new Stack(cards[i], 1, x, y));
+		kingdomStacks.push(new Stack(cards[i], (cards[i].args[0]==CardTypes.vp?8:10), x, y));
 		across++;
 		x+=xGap;
 	
@@ -63,7 +63,7 @@ function placeKingdomCards(cards){
  
  	//money and vp cards//
 	 for(var i=0;i<3;i++){
-	 	moneyStacks[i]=new Stack(moneyCards[i], 10, Math.floor(gap+xGap*3.5), game.height-yGap*(i+1));
+	 	moneyStacks[i]=new Stack(moneyCards[i], 20, Math.floor(gap+xGap*3.5), game.height-yGap*(i+1));
 		vpStacks[i]=new Stack(vpCards[i], 8, Math.floor(gap+xGap*4.5), game.height-yGap*(i+1));
 	 }
 

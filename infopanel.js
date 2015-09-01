@@ -18,20 +18,20 @@ function InfoPanel(){
     var currentX=InfoPanelStatics.startX;
     var currentY=InfoPanelStatics.startY;
 
-this.coinsText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Coins: unset", 16); 
+this.coinsText = game.add.bitmapText(currentX, currentY, 'silkscreen', "coins: unset", 16); 
  	this.coinsText.tint=col;
  	this.group.add(this.coinsText);
    
 
  	currentY+=InfoPanelStatics.yGap;
 
- 	this.actionsText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Actions: unset", 16); 
+ 	this.actionsText = game.add.bitmapText(currentX, currentY, 'silkscreen', "actions: unset", 16); 
  	this.actionsText.tint=col;
  	this.group.add(this.actionsText);
 
 	currentY+=InfoPanelStatics.yGap; 	
 
-	 this.buysText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Buys: unset", 16); 
+	 this.buysText = game.add.bitmapText(currentX, currentY, 'silkscreen', "buys: unset", 16); 
  	this.buysText.tint=col;
  	this.group.add(this.buysText);
 
@@ -45,13 +45,13 @@ this.coinsText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Coins: u
 
 	currentY+=5;
 
-	this.discardText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Discard: unset", 16); 
+	this.discardText = game.add.bitmapText(currentX, currentY, 'silkscreen', "discard: unset", 16); 
  	this.discardText.tint=col;
  	this.group.add(this.discardText);
 
  	currentY+=InfoPanelStatics.yGap; 	
 
-	this.deckText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Deck: unset", 16); 
+	this.deckText = game.add.bitmapText(currentX, currentY, 'silkscreen', "deck: unset", 16); 
  	this.deckText.tint=col;
  	this.group.add(this.deckText);
 
@@ -87,6 +87,7 @@ this.coinsText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Coins: u
  			break;
  			case InfoPanelStatics.buys:
  				this.buys+=value;
+ 				console.log("adding buys "+value);
  			break;
  		}
  		this.redoText();
@@ -94,11 +95,11 @@ this.coinsText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Coins: u
 
  	this.redoText= function(){
 
- 		this.buysText.text="Buys: "+this.buys;
- 		this.coinsText.text="Coins: "+this.coins;
- 		this.actionsText.text="Actions: "+this.actions;
- 		this.discardText.text="Discard: "+discard.length;
- 		this.deckText.text="Deck: "+deck.length;
+ 		this.buysText.text="buys: "+this.buys;
+ 		this.coinsText.text="coins: "+this.coins;
+ 		this.actionsText.text="actions: "+this.actions;
+ 		this.discardText.text="discard: "+discard.length;
+ 		this.deckText.text="deck: "+deck.length;
  	}
 
  	this.reset= function(){

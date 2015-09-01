@@ -26,7 +26,8 @@
 
 
 
-var sock = new WebSocket("ws://localhost:7981/dominion"); //localhost:7981 //server - 
+var sock = new WebSocket("ws://185.26.126.205:7981/dominion");
+// var sock = new WebSocket("ws://localhost:7981/dominion");
 sock.onopen= function(e){
    document.getElementById("formdiv").style.display="block";
 };
@@ -175,7 +176,7 @@ function gameEnd(){
     setState(GameStates.end);
     console.log(gameState==GameStates.end);
     sendMessage("v"+myScore);
-    sendAll();
+    // sendAll();
 }
 
 function checkWinner(pts){
@@ -240,11 +241,12 @@ function setState(state, arg, optional, after){
             this.stateAmount=arg;
         break;
         case GameStates.gainCardMax:
+            this.stateAmount=1;
             addPrompt("Gain a card costing up to "+arg, optional);
         break;
         case GameStates.discard:
             stateSpecial=0;
-            addPrompt("discard "+(arg==0?"":(arg==1?" ":"s "))+ "cards", arg==0);
+            addPrompt("discard "+(arg==0?"x":arg)+ " card"+(arg==1?"":"s"), arg==0);
             this.stateAmount=(arg==0?999:arg);
             console.log(this.stateAmount);
         break;
@@ -261,6 +263,7 @@ function setState(state, arg, optional, after){
 }
 
 function stateSuccess(all){
+    console.log(stateAmount);
     if(!all&&stateAmount>1){
         stateAmount--;
         return;
@@ -285,10 +288,11 @@ function stateSuccess(all){
 </div>
 <div id = "formdiv" style = "display:none; height: 650px; width: 1042px; position: absolute; left:300px; top:200px">
 <form onsubmit="return joingame()">
-  username:<br>
-  <input type="text" id="username" value="">
+  <font color="white">username:</font> <br>
+  <input type="text" id="username" value="" >
   <br>
-  game name:<br>
+  <br>
+  <font color="white">game name:</font> <br>
   <input type="text" id="gamename" value="">
   <br><br>
   <input type="submit" value="Submit">

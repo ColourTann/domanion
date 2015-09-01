@@ -46,7 +46,7 @@ function Action(action, arg, resultActions, card){
 			case actionStatics.draw:
 				player.drawCards(arg);
 			break;
-			case actionStatics.buys:
+			case actionStatics.buy:
 				infoPanel.addData(InfoPanelStatics.buys, arg);
 			break;
 			case actionStatics.trash:
@@ -134,6 +134,7 @@ function Card(cardType, title, cost, texts, actions){
 	    		this.trash();
 	    		stateSpecial=this;
 	    		stateSuccess();
+	    		sendAll();
 	    		return;
 	    	}
 
@@ -141,11 +142,13 @@ function Card(cardType, title, cost, texts, actions){
 	    		this.discard();
 	    		stateSpecial++;
 	    		stateSuccess();
+	    		sendAll();
+	    		console.log("discarding");
 	    		return;
 	    	}
 	    	return;
 		}
-
+		console.log("playing");
     	if(this.state==CardStates.hand)this.play();
     	sendAll();
     }
@@ -267,7 +270,7 @@ function Card(cardType, title, cost, texts, actions){
 			}
 		}
 
-		if(this.cardType==CardTypes.vp)infoPanel.addData(InfoPanelStatics.actions, -1);
+		if(this.cardType==CardTypes.action)infoPanel.addData(InfoPanelStatics.actions, -1);
 
 		log.addLine(username+" plays "+this.title);
 		playedCard=this;
@@ -413,7 +416,7 @@ function setupCards(){
 
 	kingdomCards[1]= new CardArgs(CardTypes.action, "chapel", 2, 
 		["trash up", "to 4 cards"], 
-		[new Action(actionStatics.trash, 4)]);  
+		[new Action(actionStatics.trash, 4)]);
 
 	kingdomCards[2]= new CardArgs(CardTypes.action, "oracle", 3, 
 		["+1 card, +1 action", "+1 coin", "discard a card"], 
@@ -470,7 +473,7 @@ function setupCards(){
 
 	kingdomCards[14]= new CardArgs(CardTypes.action, "festival", 5, 
 		["+2 actions", "+1 buy", "+2 coins"], 
-		[new Action(actionStatics.action, 2), new Action(actionStatics.buys, 1), 
+		[new Action(actionStatics.action, 2), new Action(actionStatics.buy, 1), 
 		new Action(actionStatics.money, 2)]);  
 
 	kingdomCards[15]= new CardArgs(CardTypes.action, "laboratory", 5, 
