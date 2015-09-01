@@ -88,8 +88,6 @@ this.coinsText = game.add.bitmapText(currentX, currentY, 'silkscreen', "Coins: u
  			case InfoPanelStatics.buys:
  				this.buys+=value;
  			break;
- 			
-
  		}
  		this.redoText();
  	}

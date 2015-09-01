@@ -1,11 +1,15 @@
+var depletedStacks=0;
+
+
+
 function Stack(cardArgs, number, x, y){
 	this.numCards=number;
-	var cardStack=[];
+	this.cardStack=[];
 	for(var i=0;i<number;i++){
 	 	var card= createCard(cardArgs);
 	 	card.group.x=x;
 	 	card.group.y=y;
-	 	cardStack.push(card);
+	 	this.cardStack.push(card);
 	}
 
 	var baseTextX=x+cardStatics.cardWidth-14;
@@ -16,36 +20,51 @@ function Stack(cardArgs, number, x, y){
 
 	// var me =this;
 	click=function(){
-		if(gameState!=GameStates.playing_cards)return;
 		this.buy();
+		sendAll();
 	}
 
 	this.buy=function(){
-		if(cardStack.length==0)return;
+		if(this.cardStack.length==0)return;
 
 		//specials//
-		if(gameState==GameStates.gainCardMax && cardStack[0].cost<=stateArg){
+		if(gameState==GameStates.gainCardMax && this.cardStack[0].cost<=stateArg){
     		this.gain(true);
     		stateSuccess();
     		return;
     	}
 
+    	if(gameState!=GameStates.playing_cards)return;
 
 		//regular buying//
 
 
-		if(cardStack[0].cost>infoPanel.coins||infoPanel.buys<=0)return;
+		if(this.cardStack[0].cost>infoPanel.coins||infoPanel.buys<=0)return;
 		this.gain();
 		
 	}
 
-	this.remove=function(){
+	this.remove=function(fromServer){
+		console.log("removing");
 		this.numCards--;
 		if(this.numCards>0) this.text.text="["+this.numCards+"]";
 		else this.text.text="";
 		this.setupTextPosition();
+		var card = this.cardStack.shift();
 
-		var card = cardStack.shift();
+		if(!fromServer)sendMessage("b"+card.title);
+		else card.hide();
+
+		if(this.cardStack.length==0){
+			depletedStacks++;
+			if(!fromServer){
+				if((card.title=="province"&&this.cardStack.length==0)||
+					depletedStacks==3){
+					gameEnd();
+				}
+			}
+		}
+		
 		return card;
 	}
 

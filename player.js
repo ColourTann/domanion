@@ -30,6 +30,7 @@ function Player(){
 			if(deck.length==0){
 				this.dominion();
 			} 
+			if(deck.length==0)return;
 			var card = deck.splice(0,1)[0];
 			card.setState(CardStates.hand);
 			this.addCardToHand(card);
@@ -106,12 +107,16 @@ function Player(){
 
 	this.playAllCoins= function(){
 		if(gameState!=GameStates.playing_cards)return;
+
+		
+
 		for(var i=hand.length-1;i>=0;i--){
 			var card = hand[i];
 			if(card.cardType==CardTypes.money){
 				card.play();
 			}
 		}
+		sendAll();
 	}
 
 	this.updatePanel=function(){
@@ -137,10 +142,11 @@ function Player(){
 		player.updatePanel();
 		setState(GameStates.enemyturn);
 		sendMessage("e");
+		sendAll();
 	}
 
 	
-	var buttX=900;
+	var buttX=842;
 	var buttY=300;
 	var buttGap=40;
 	var playCoinsButt;
@@ -161,6 +167,79 @@ function Player(){
 		playCoinsButt.group.visible=show;
 	}
 	this.showButtons(false);
+
+	this.getAllCards=function(){
+		var totalCards = [];
+		totalCards=totalCards.concat(deck);
+		totalCards=totalCards.concat(hand);
+		totalCards=totalCards.concat(played);
+		totalCards=totalCards.concat(discard);
+		return totalCards;
+	}
+
+	this.logVictoryCards=function(){
+		var totalCards=this.getAllCards();
+		var cards=[];
+		for(var i=0;i<totalCards.length;i++){
+			var card = totalCards[i];
+			for(var j=0;j<card.actions.length;j++){
+				var action = card.actions[j];
+				var found=false;
+				switch(action.action){
+					case actionStatics.vp:
+						found=true;
+					break;
+					case actionStatics.onePointPerTen:
+						found=true;
+					break;
+					case actionStatics.pointsPerDuchy:
+						found=true;
+					break;
+				}
+				if(found){
+					cards.push(card);
+					break;	
+				}
+				
+			}
+		}
+		sortByType(cards);
+		for(var i=0;i<cards.length;i++){
+			var card = cards[i];
+			log.addLine(card.title);
+		}
+	}
+
+	this.calculateScore=function(){
+		var totalCards = this.getAllCards();
+		
+		var score=0;
+		var numDuchy=0;
+		for(var i=0;i<totalCards.length;i++){
+			var card = totalCards[i];
+			if(card.title=="duchy")numDuchy++;
+		}
+
+		for(var i=0;i<totalCards.length;i++){
+			var card = totalCards[i];
+			
+			for(var j=0;j<card.actions.length;j++){
+				var action = card.actions[j];
+				switch(action.action){
+					case actionStatics.vp:
+						score+=action.arg;
+					break;
+					case actionStatics.onePointPerTen:
+						score+=Math.floor(totalCards.length/10);
+					break;
+					case actionStatics.pointsPerDuchy:
+						score+=numDuchy;
+					break;
+				}
+			}
+		}
+		return score;
+	}
 }
 
 

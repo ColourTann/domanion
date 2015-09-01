@@ -11,7 +11,7 @@ var CardTypes={vp:0, action:1, money:2};
 
 var actionStatics={	money:0, action:1, draw:2, buy:3, trash:4, cycle:5, immunity:6, gainCardMax:7, 
 	trashSelf:8, onePointPerTen:9, otherDiscard:10, trashCopper:11, doublePlay:12, opponentseDraw:13,
-	upgradeTreasure:14, curse:15, upgrade:17, drawDiscarded:18, gainBetterTreasure:19, discard:20
+	upgradeTreasure:14, curse:15, upgrade:17, drawDiscarded:18, gainBetterTreasure:19, discard:20, vp:21, pointsPerDuchy:22
 };
 
 var CardRequirement={hasCopper:0, hasCard:1, hasTreasure:2};
@@ -89,6 +89,9 @@ function Action(action, arg, resultActions, card){
 			case actionStatics.discard:
 				setState(GameStates.discard, arg, false);
 			break;
+			case actionStatics.opponentseDraw:
+				sendMessage("fd");
+			break;
 
 			
 			
@@ -144,6 +147,7 @@ function Card(cardType, title, cost, texts, actions){
 		}
 
     	if(this.state==CardStates.hand)this.play();
+    	sendAll();
     }
     
 	this.addText= function(line, text, group){
@@ -211,12 +215,61 @@ function Card(cardType, title, cost, texts, actions){
 	}
 
 	this.play=function(){
-		log.addLine(username+" plays "+this.title);
+	
 		if(this.cardType==CardTypes.vp)return;
 		if(this.cardType==CardTypes.action){
 			if(infoPanel.actions<=0)return;
-			infoPanel.addData(InfoPanelStatics.actions, -1);
 		}
+
+		var draw=false;
+		for(var i=0;i<actions.length;i++){
+			var act = actions[i];
+			if(draw)break;
+			switch(act.action){
+				case actionStatics.draw:
+					draw=true;
+				break;
+				case actionStatics.trashCopper:
+					var found=false;
+					for(var i=0;i<hand.length;i++){
+						var card = hand[i];
+						if(card.title=="copper"){
+							found=true;
+							break;
+						}
+					}
+					if(!found){
+						console.log("not playing because no copper");
+						return;
+					}
+				break;
+				case actionStatics.trashTreasure:
+				case actionStatics.upgradeTreasure:
+					var found=false;
+					for(var i=0;i<hand.length;i++){
+						var card = hand[i];
+						if(card.cardType==CardTypes.money){
+							found=true;
+							break;
+						}
+					}
+					if(!found){
+						console.log("not playing because no treasure");
+						return;
+					}
+					break;
+				case actionStatics.trash:
+					if(hand.length<2){
+						console.log("not playing because nothing to trash");
+						return;
+					}
+				break;
+			}
+		}
+
+		if(this.cardType==CardTypes.vp)infoPanel.addData(InfoPanelStatics.actions, -1);
+
+		log.addLine(username+" plays "+this.title);
 		playedCard=this;
 		this.removeFromHand();
 		played.push(this);
@@ -225,6 +278,7 @@ function Card(cardType, title, cost, texts, actions){
     		var action = this.actions[i];
     		action.run();
     	}
+
 	}
 
 	this.hide=function(){
@@ -286,7 +340,8 @@ function Card(cardType, title, cost, texts, actions){
  	this.faceUpGroup.add(this.cardOutline);
 
  	//add image//
- 	this.cardpic = game.add.sprite(0,0,'cardpic');
+ 	console.log(this.title);
+ 	this.cardpic = game.add.sprite(22,25, this.title+"");
  	this.faceUpGroup.add(this.cardpic);
 
     //add card title//
@@ -330,9 +385,9 @@ function setupCards(){
 
 	//vp cards constructor list//
 
-	vpCards[0]= new CardArgs(CardTypes.vp, "estate", 2, ["1 point"]); vpCards[0].points=1;
-	vpCards[1]= new CardArgs(CardTypes.vp, "duchy", 5, ["3 points"]); vpCards[1].points=3;
-	vpCards[2]= new CardArgs(CardTypes.vp, "province", 8, ["6 points"]); vpCards[2].points=6;
+	vpCards[0]= new CardArgs(CardTypes.vp, "estate", 2, ["1 point"],[new Action(actionStatics.vp, 1)]); vpCards[0].points=1;
+	vpCards[1]= new CardArgs(CardTypes.vp, "duchy", 5, ["3 points"],[new Action(actionStatics.vp, 3)]); vpCards[1].points=3;
+	vpCards[2]= new CardArgs(CardTypes.vp, "province", 8, ["6 points"],[new Action(actionStatics.vp, 6)]); vpCards[2].points=6;
 
 
 	//money cards constructor list//
@@ -365,9 +420,9 @@ function setupCards(){
 		[new Action(actionStatics.draw, 1), new Action(actionStatics.action, 1),
 		new Action(actionStatics.money, 1),	new Action(actionStatics.discard, 1)]);  
 
-	kingdomCards[3]= new CardArgs(CardTypes.action, "great Hall", 3, 
+	kingdomCards[3]= new CardArgs(CardTypes.action, "great hall", 3, 
 		["+1 action", "+1 card", "worth 1 point"], 
-		[new Action(actionStatics.action, 1), new Action(actionStatics.draw, 1)]);  
+		[new Action(actionStatics.action, 1), new Action(actionStatics.draw, 1),new Action(actionStatics.vp, 1)]);  
 
 	kingdomCards[4]= new CardArgs(CardTypes.action, "woodcutter", 3, 
 		["+2 coins", "+1 buy"], 
@@ -378,7 +433,7 @@ function setupCards(){
 		[new Action(actionStatics.gainCardMax, 4)]);  
 
 	kingdomCards[6]= new CardArgs(CardTypes.action, "feast", 4, 
-		["trash this to", "gain a card", "up to 5 cost"], 
+		["trash this to", "gain a card", "up to cost 5"], 
 		[new Action(actionStatics.trashSelf), new Action(actionStatics.gainCardMax, 5)]);  
 
 	kingdomCards[7]= new CardArgs(CardTypes.vp, "gardens", 4, 
@@ -438,7 +493,7 @@ function setupCards(){
 
 	kingdomCards[19]= new CardArgs(CardTypes.vp, "duke", 5, 
 		["1 point per", "duchy in your", "deck"], 
-		[]);	
+		[new Action(actionStatics.pointsPerDuchy, 1)]);	
 
 	kingdomCards[20]= new CardArgs(CardTypes.action, "warehouse", 3, 
 		["+3 cards", "+1 action", "discard 3 cards"], 

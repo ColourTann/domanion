@@ -26,7 +26,7 @@
 
 
 
-var sock = new WebSocket("ws://localhost:7981/dominion"); //localhost:7981
+var sock = new WebSocket("ws://localhost:7981/dominion"); //localhost:7981 //server - 
 sock.onopen= function(e){
    document.getElementById("formdiv").style.display="block";
 };
@@ -34,22 +34,37 @@ sock.onmessage= function(m){
     console.log("from server: "+m.data);
     var string = m.data;
     var data = string.substring(1,m.data.length);
-    if(m.data.charAt(0)=="s")startGame(); //start game//
+    if(m.data.charAt(0)=="s"){
+        startGame(data); //start game//
+    }
+    
     if(m.data.charAt(0)=="e"){setState(GameStates.playing_cards);} //opponent ended turn//
     if(m.data.charAt(0)=="m")log.addLine(data, true); //message to log//
-    
+    if(m.data.charAt(0)=="h")hosting();
+    if(m.data.charAt(0)=="x")lostConnection();
+    if(m.data.charAt(0)=="b")removeFromStack(data);
+    if(m.data.charAt(0)=="f"){
+          console.log("function");
+        if(m.data.charAt(1)=="d"){
+            console.log("draw");
+            player.drawCards(1);
+        }
+    }
+    if(m.data.charAt(0)=="v"){
+        checkWinner(data);
+    }
 }
 
 var message ="";
 var separator=">";
 function sendMessage(string){
-    if(string!="")message+=separator;
+    if(message.length>0)message+=separator;
     message+=string;
 }
 
 
 
-var game = new Phaser.Game(1100, 650, Phaser.AUTO, 'gamm', { preload: preload, create: create, update: update });
+var game = new Phaser.Game(1042, 650, Phaser.AUTO, 'gamm', { preload: preload, create: create, update: update });
 
 var c_light = 0xdeeed6;
 var c_green = 0x346524;
@@ -62,12 +77,24 @@ var c_dark = 0x140c1c;
 var c_greyDark= 0x4e4a4e;
 
 function joingame(){
-    document.getElementById("formdiv").style.display="none";
-    username=document.getElementById("username").value;
-    sendMessage("h"+document.getElementById("gamename").value);
+    var un=document.getElementById("username").value;
+    if(un.length==0)return;
+    var gn =document.getElementById("gamename").value;
+    if(gn.length==0)return;
+
+    username=un;
+    sendMessage("h"+gn);
+    sendAll();
     return false;
 }
 
+function lostConnection(){
+    log.addLine("lost connection : (", true);
+}
+
+function hosting(){
+      document.getElementById("formdiv").style.display="none";
+}
 
 function preload() {
     game.load.bitmapFont('silkscreen', 'assets/silkscreen_0.png', 'assets/silkscreen.fnt');
@@ -82,11 +109,40 @@ function preload() {
     game.load.image('bigbutton', 'assets/bigbutton.png');
     game.load.image('longbutton', 'assets/longbutton.png');
     game.load.image('invisiblecard', 'assets/invisiblecard.png');
+
+    game.load.image('copper', 'assets/cards/copper.png');
+    game.load.image('silver', 'assets/cards/silver.png');
+    game.load.image('gold', 'assets/cards/gold.png');
+    game.load.image('estate', 'assets/cards/estate.png');
+    game.load.image('duchy', 'assets/cards/duchy.png');
+    game.load.image('province', 'assets/cards/province.png');
+    game.load.image('cellar', 'assets/cards/cellar.png');
+    game.load.image('chapel', 'assets/cards/chapel.png');
+    game.load.image('oracle', 'assets/cards/oracle.png');
+    game.load.image('great hall', 'assets/cards/great hall.png');
+    game.load.image('woodcutter', 'assets/cards/woodcutter.png');
+    game.load.image('workshop', 'assets/cards/workshop.png');
+    game.load.image('feast', 'assets/cards/feast.png');
+    game.load.image('gardens', 'assets/cards/gardens.png');
+    game.load.image('pub', 'assets/cards/pub.png');
+    game.load.image('loanshark', 'assets/cards/loanshark.png');
+    game.load.image('remodel', 'assets/cards/remodel.png');
+    game.load.image('smithy', 'assets/cards/smithy.png');
+    game.load.image('bazaar', 'assets/cards/bazaar.png');
+    game.load.image('council', 'assets/cards/council.png');
+    game.load.image('festival', 'assets/cards/festival.png');
+    game.load.image('laboratory', 'assets/cards/laboratory.png');
+    game.load.image('market', 'assets/cards/market.png');
+    game.load.image('mine', 'assets/cards/mine.png');
+    game.load.image('altar', 'assets/cards/altar.png');
+    game.load.image('duke', 'assets/cards/duke.png');
+    game.load.image('warehouse', 'assets/cards/warehouse.png');
+    game.load.image('junk dealer', 'assets/cards/junk dealer.png');
 }
 
 var GameStates={
     playing_cards:0, trashCardFromHand:1, gainCardCosting:2, gainCardMax:3, discard:4,
-    trashCopper:5, trashTreasure:6, gainTreasure:7, enemyturn:8
+    trashCopper:5, trashTreasure:6, gainTreasure:7, enemyturn:8, end:9
 };
 
 var username= "tann";
@@ -114,27 +170,63 @@ function create() {
 
 }
 
-function startGame(){
+function gameEnd(){
+    var myScore = player.calculateScore();
+    setState(GameStates.end);
+    console.log(gameState==GameStates.end);
+    sendMessage("v"+myScore);
+    sendAll();
+}
+
+function checkWinner(pts){
+    console.log("checkingWinner");
+    var myScore = player.calculateScore();
+   
+    
+    log.addLine(username+" scores "+myScore+" from:");
+    player.logVictoryCards();
+    console.log(gameState==GameStates.end);
+    if(gameState!=GameStates.end){
+        sendMessage("v"+myScore);
+    }
+    else{
+        console.log("didnt send");
+    }
+    setState(GameStates.end);
+    if(myScore>=pts){
+        log.addLine(username+" wins!");
+    }
+    sendAll();
+}
+
+function startGame(data){
+    document.getElementById("formdiv").style.display="none";
     infoPanel=new InfoPanel();
     setupCards();
-    new Tableau();
+    new Tableau(data);
     player = new Player();
     log = new Log();
 }
 
-function update() {
-    if(message!=""){
+function sendAll(){
+     if(message!=""){
         sock.send(message);
         message="";
     }
 }
 
+function update() {
+   
+    if(player!=null){
+        // console.log(player.calculateScore());
+    } 
+}
+
 function setState(state, arg, optional, after){
-    this.gameState=state;
+    gameState=state;
     stateArg=arg;
     postActions=after;
     stateSpecial=[];
-   console.log("setting state: "+stringEnum(state, GameStates));
     switch(gameState){
         case GameStates.playing_cards:
             removePrompt();
@@ -188,16 +280,16 @@ function stateSuccess(all){
 
 <div style = "position: relative">
 
-<div id = "gamm" style = "height: 650px; width: 1100px; position: absolute; left:0; top:0">
+<div id = "gamm" style = "height: 650px; width: 1042px; position: absolute; left:0; top:0">
 
 </div>
-<div id = "formdiv" style = "display:none; height: 650px; width: 1100px; position: absolute; left:300px; top:200px">
+<div id = "formdiv" style = "display:none; height: 650px; width: 1042px; position: absolute; left:300px; top:200px">
 <form onsubmit="return joingame()">
   username:<br>
-  <input type="text" id="username" value="tann">
+  <input type="text" id="username" value="">
   <br>
   game name:<br>
-  <input type="text" id="gamename" value="game">
+  <input type="text" id="gamename" value="">
   <br><br>
   <input type="submit" value="Submit">
 </form>

@@ -1,5 +1,5 @@
 function Log(){
-	var groupX=725;
+	var groupX=670;
 	var groupY=241;
 	var yGap=-20;
 	var currentY=0;
