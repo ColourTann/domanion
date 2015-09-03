@@ -20,7 +20,6 @@ function Stack(cardArgs, number, x, y){
 	// var me =this;
 	click=function(){
 		this.buy();
-		sendAll();
 	}
 
 	this.buy=function(){

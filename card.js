@@ -134,7 +134,6 @@ function Card(cardType, title, cost, texts, actions){
 	    		this.trash();
 	    		stateSpecial=this;
 	    		stateSuccess();
-	    		sendAll();
 	    		return;
 	    	}
 
@@ -142,15 +141,11 @@ function Card(cardType, title, cost, texts, actions){
 	    		this.discard();
 	    		stateSpecial++;
 	    		stateSuccess();
-	    		sendAll();
-	    		console.log("discarding");
 	    		return;
 	    	}
 	    	return;
 		}
-		console.log("playing");
     	if(this.state==CardStates.hand)this.play();
-    	sendAll();
     }
     
 	this.addText= function(line, text, group){
@@ -429,7 +424,7 @@ function setupCards(){
 
 	kingdomCards[4]= new CardArgs(CardTypes.action, "woodcutter", 3, 
 		["+2 coins", "+1 buy"], 
-		[new Action(actionStatics.money, 2), new Action(actionStatics.buys, 1)]);  
+		[new Action(actionStatics.money, 2), new Action(actionStatics.buy, 1)]);  
 
 	kingdomCards[5]= new CardArgs(CardTypes.action, "workshop", 3, 
 		["gain any card", "up to cost 4"], 
@@ -508,10 +503,11 @@ function setupCards(){
 		[new Action(actionStatics.draw, 1), new Action(actionStatics.action, 1), 
 		new Action(actionStatics.money, 1), new Action(actionStatics.trash, 1)]);	
 
+	kingdomCards[22]= new CardArgs(CardTypes.action, "village", 3, 
+		["+2 actions", "+1 card"], 
+		[new Action(actionStatics.draw, 1), new Action(actionStatics.action, 2)]);	
 
-
-
-
+	
 }
 
 function placeNicely(cards, y){

@@ -26,8 +26,8 @@
 
 
 
-var sock = new WebSocket("ws://185.26.126.205:7981/dominion");
-// var sock = new WebSocket("ws://localhost:7981/dominion");
+// var sock = new WebSocket("ws://185.26.126.205:7981/dominion");
+var sock = new WebSocket("ws://localhost:7981/dominion");
 sock.onopen= function(e){
    document.getElementById("formdiv").style.display="block";
 };
@@ -85,7 +85,6 @@ function joingame(){
 
     username=un;
     sendMessage("h"+gn);
-    sendAll();
     return false;
 }
 
@@ -139,6 +138,7 @@ function preload() {
     game.load.image('duke', 'assets/cards/duke.png');
     game.load.image('warehouse', 'assets/cards/warehouse.png');
     game.load.image('junk dealer', 'assets/cards/junk dealer.png');
+    game.load.image('village', 'assets/cards/village.png');
 }
 
 var GameStates={
@@ -160,12 +160,6 @@ var playedCard;
 
 
 
-
-
-
-
-
-
 function create() {
     game.stage.backgroundColor = c_greyDark;
 
@@ -176,7 +170,6 @@ function gameEnd(){
     setState(GameStates.end);
     console.log(gameState==GameStates.end);
     sendMessage("v"+myScore);
-    // sendAll();
 }
 
 function checkWinner(pts){
@@ -197,7 +190,6 @@ function checkWinner(pts){
     if(myScore>=pts){
         log.addLine(username+" wins!");
     }
-    sendAll();
 }
 
 function startGame(data){
@@ -216,8 +208,8 @@ function sendAll(){
     }
 }
 
-function update() {
-   
+function update() { 
+   sendAll();
     if(player!=null){
         // console.log(player.calculateScore());
     } 

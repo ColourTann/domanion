@@ -116,7 +116,6 @@ function Player(){
 				card.play();
 			}
 		}
-		sendAll();
 	}
 
 	this.updatePanel=function(){
@@ -142,7 +141,6 @@ function Player(){
 		player.updatePanel();
 		setState(GameStates.enemyturn);
 		sendMessage("e");
-		sendAll();
 	}
 
 	
